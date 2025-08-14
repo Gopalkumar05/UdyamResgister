@@ -146,41 +146,42 @@
 //   process.exit();
 // });
 
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
-const { validateStep1, validateStep2 } = require('./validation');
 const path = require('path');
+const { validateStep1, validateStep2 } = require('./validation');
 
 const prisma = new PrismaClient();
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
-
-// --- Middleware ---
-app.use(cors({
-  origin: "http://localhost:5173", // change to localhost for dev if needed
-}));
+const newLocal = { origin: "http://localhost:5173" };
+// Middleware
+app.use(cors(newLocal));
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
-
-
-// --- OTP endpoints ---
+// -------------------- OTP Endpoints --------------------
 app.post('/api/generate-otp', async (req, res) => {
   const { aadhaar } = req.body;
   const validationError = validateStep1({ aadhaar });
+
   if (validationError) return res.status(400).json({ error: validationError });
 
   try {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
     await prisma.otpRecord.upsert({
       where: { aadhaar },
       update: { otp },
-      create: { aadhaar, otp },
+      create: { aadhaar, otp }
     });
+
     console.log(`OTP for ${aadhaar}: ${otp}`);
-    res.json({ message: 'OTP sent successfully', otp });
+    res.json({ message: 'OTP sent successfully' });
   } catch (error) {
     console.error('OTP generation error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -189,11 +190,15 @@ app.post('/api/generate-otp', async (req, res) => {
 
 app.post('/api/verify-otp', async (req, res) => {
   const { aadhaar, otp } = req.body;
+
   try {
     const record = await prisma.otpRecord.findUnique({ where: { aadhaar } });
-    if (!record || record.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
+
+    if (!record || record.otp !== otp)
+      return res.status(400).json({ error: 'Invalid OTP' });
 
     await prisma.otpRecord.delete({ where: { aadhaar } });
+
     res.json({ success: true, message: 'OTP verified' });
   } catch (error) {
     console.error('OTP verification error:', error);
@@ -201,7 +206,7 @@ app.post('/api/verify-otp', async (req, res) => {
   }
 });
 
-// --- Registration endpoint ---
+// -------------------- Registration Endpoint --------------------
 app.post('/api/submit-registration', async (req, res) => {
   const formData = req.body;
 
@@ -209,7 +214,8 @@ app.post('/api/submit-registration', async (req, res) => {
   if (step1Error) return res.status(400).json({ error: step1Error });
 
   const step2Errors = validateStep2(formData);
-  if (Object.keys(step2Errors).length > 0) return res.status(400).json({ errors: step2Errors });
+  if (Object.keys(step2Errors).length > 0)
+    return res.status(400).json({ errors: step2Errors });
 
   try {
     const registration = await prisma.registration.create({
@@ -217,47 +223,47 @@ app.post('/api/submit-registration', async (req, res) => {
         aadhaar: formData.aadhaar,
         pan: formData.pan,
         name: formData.name,
-        category: formData.category,
-        gender: formData.gender,
-        businessName: formData.businessName,
-        organizationType: formData.organizationType,
         pincode: formData.pincode,
         state: formData.state,
         district: formData.district,
-        address: formData.address,
-      },
+        address: formData.address
+      }
     });
 
     res.json({
       success: true,
       message: 'Registration successful',
-      udyamNumber: `UDYAM-${Date.now()}-${registration.id}`,
+      udyamNumber: `UDYAM-${Date.now()}-${registration.id}`
     });
   } catch (error) {
     console.error('Registration error:', error);
-    if (error.code === 'P2002') return res.status(400).json({ error: 'Aadhaar number already registered' });
+
+    if (error.code === 'P2002') {
+      return res.status(400).json({ error: 'Aadhaar number already registered' });
+    }
+
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// --- Health check ---
+// -------------------- Health Check --------------------
 app.get('/health', (req, res) => {
   res.send('Udyam Registration API is running');
 });
 
-// --- Serve frontend ---
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
+// -------------------- SPA Frontend Fallback --------------------
+app.get('/', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../frontend/dist/index.html'));
 });
 
-// --- Start server ---
+// -------------------- Start Server --------------------
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// --- Graceful shutdown ---
+// -------------------- Graceful Shutdown --------------------
 process.on('SIGINT', async () => {
+  console.log('Shutting down server...');
   await prisma.$disconnect();
   process.exit();
 });
