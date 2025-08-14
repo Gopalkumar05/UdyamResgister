@@ -156,18 +156,15 @@ const path = require('path');
 const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 5000;
-const DEBUG_URL = process.env.DEBUG_URL || '/debug';
+
 
 // --- Middleware ---
 app.use(cors({
-  origin: "https://udyamr.onrender.com", // change to localhost for dev if needed
+  origin: "http://localhost:5173", // change to localhost for dev if needed
 }));
 app.use(express.json());
 
-// --- Debug route ---
-app.get(DEBUG_URL, (req, res) => {
-  res.send('Debug route works');
-});
+
 
 // --- OTP endpoints ---
 app.post('/api/generate-otp', async (req, res) => {
