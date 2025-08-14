@@ -24,7 +24,7 @@ const Step1Aadhaar = () => {
     setLoading(true);
 
     try {
-      const res = await fetch('https://udyamr1.onrender.com/api/generate-otp', {
+      const res = await fetch('https://udyamresgister-1.onrender.com/api/generate-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ aadhaar: formData.aadhaar })
@@ -52,7 +52,7 @@ const Step1Aadhaar = () => {
 
     setLoading(true);
     try {
-      const res = await fetch('https://udyamr1.onrender.com/api/verify-otp', {
+      const res = await fetch('https://udyamresgister-1.onrender.com/api/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
