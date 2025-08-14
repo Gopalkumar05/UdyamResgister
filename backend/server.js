@@ -152,8 +152,10 @@ const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const path = require('path');
+import { fileURLToPath } from "url";
 const { validateStep1, validateStep2 } = require('./validation');
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT;
@@ -162,7 +164,8 @@ const newLocal = { origin: "http://localhost:5173" };
 // Middleware
 app.use(cors(newLocal));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
 // -------------------- OTP Endpoints --------------------
 app.post('/api/generate-otp', async (req, res) => {
@@ -252,8 +255,11 @@ app.get('/health', (req, res) => {
 });
 
 // -------------------- SPA Frontend Fallback --------------------
-app.get('/', (req, res) => {
-  res.sendFile(path.resolve(__dirname, '../frontend/dist/index.html'));
+// app.get('/', (req, res) => {
+//   res.sendFile(path.resolve(__dirname, '../frontend/dist/index.html'));
+// });
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
 // -------------------- Start Server --------------------
