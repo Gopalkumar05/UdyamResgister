@@ -7,7 +7,7 @@
     "dev": "nodemon server.js",
     "migrate": "prisma migrate dev",
     "generate": "prisma generate",
-     "build": "echo 'No build needed for backend'"
+     "build": "npm install --prefix ../frontend && npm run build --prefix ../frontend"
   },
   "dependencies": {
     "@prisma/client": "^6.14.0",
